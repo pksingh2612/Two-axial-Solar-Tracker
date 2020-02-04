@@ -1,0 +1,131 @@
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+
+#define dirPin_A 2
+#define stepPin_A 3
+//#define dirPin_B 4
+//#define stepPin_B 5
+
+
+#define m0 6
+#define m1 7
+#define m2 8
+#define stepsPerRevolution 50
+
+int topleft;
+int topright;
+int downleft;
+int downright;
+int waittime = 1000;
+
+int diff=0;
+
+RF24 radio(9, 10); // CE, CSN
+const byte address[6] = "00001";
+void setup() 
+{
+  Serial.begin(9600);
+  //DDRB = 0b00011111;
+  pinMode(stepPin_A, OUTPUT);//360 motor
+  pinMode(dirPin_A, OUTPUT);
+  pinMode(m0, OUTPUT);
+  pinMode(m1, OUTPUT);
+  pinMode(m2, OUTPUT);
+  //pinMode(stepPin_B, OUTPUT);
+  //pinMode(dirPin_B, OUTPUT);
+  
+  //TCCR1A = 0;
+  //TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM11);
+  //TCCR1B = 0;
+  //TCCR1B = (1 << WGM13) | (1 << WGM12) | (1 << CS11);
+  //ICR1 = 40000;
+  //OCR1A = 3000;
+  //OCR1B = 3600;
+
+  radio.begin();
+  radio.openWritingPipe(address);
+  radio.setPALevel(RF24_PA_MIN);
+  radio.stopListening();
+}
+
+void loop() 
+{
+  topleft = analogRead(A0);
+  topright = analogRead(A1);
+  downleft = analogRead(A2);
+  downright = analogRead(A3);
+  
+  
+  //int avgTop=(topleft+topright)/2;
+  //int avgDown=(downleft+downright)/2;
+  int avgLeft=(topleft+downleft)/2;
+  int avgRight=(topright+downright)/2;
+  
+  //int dvert=avgTop-avgDown;
+  //int dhor=avgLeft-avgRight;
+  
+  Serial.print("TL");Serial.print(",");Serial.print("TR");Serial.print(",");Serial.print("DL");Serial.print(",");Serial.println("DR");
+  Serial.print(topleft);Serial.print(",");Serial.print(topright);Serial.print(",");Serial.print(downleft);Serial.print(",");Serial.println(downright);
+  
+  int text[] = {topleft,topright,downleft,downright};
+  radio.write(&text, sizeof(text));
+  
+    if (avgLeft> avgRight) 
+    {
+      // Set the spinning direction clockwise:
+      digitalWrite(dirPin_A, HIGH);
+      Run(downleft,downright);
+    }
+    
+    if (avgLeft< avgRight) 
+    {
+      // Set the spinning direction counterclockwise:
+      digitalWrite(dirPin_A, LOW);
+      Run(downright,downleft);
+    }
+    delay(500);
+}
+void Run(int a,int b)
+{
+  diff=a-b;
+  if(diff>=30)
+  {
+    //micro stepping 1/2
+     digitalWrite(m0,HIGH);
+     digitalWrite(m1,LOW);
+     digitalWrite(m2,LOW);
+    // Spin the stepper motor 1 revolution slowly:
+    for (int i = 0; i < stepsPerRevolution; i++) 
+    {
+     
+      // These four lines result in 1 step:
+      digitalWrite(stepPin_A, HIGH);
+      delayMicroseconds(2000);
+      digitalWrite(stepPin_A, LOW);
+      delayMicroseconds(2000);
+    }
+  }
+  if(diff<30&& diff>0)
+  {
+    digitalWrite(m0,LOW);
+    digitalWrite(m1,LOW);
+    digitalWrite(m2,LOW);
+      
+    digitalWrite(stepPin_A, HIGH);
+    delayMicroseconds(200);
+    digitalWrite(stepPin_A, LOW);
+    delayMicroseconds(200);
+  }
+  if (diff==0)
+  {
+    digitalWrite(m0,LOW);
+    digitalWrite(m1,LOW);
+    digitalWrite(m2,LOW);
+    
+    digitalWrite(stepPin_A, LOW);
+    delayMicroseconds(200);
+    digitalWrite(stepPin_A, LOW);
+    delayMicroseconds(200);
+    }
+  }

@@ -1,0 +1,271 @@
+   
+//******************************************************************************//
+
+                  //This code is for Dual AxisSolar Tracker
+                  //Atmega328P (Internal 1MHz Frequency) with AREF 3.3v
+                  //Anshul Verma 
+                  //M.Tech (Microelectronics) 
+                  //IIIT Allahabad 
+                  
+//******************************************************************************
+
+ //Nokia 5110 Pin Layout
+ //RST PB0(Arduino Pin 8)
+ //CE  PB1(Arduino Pin 9)
+ //DC  PB2(Arduino Pin 10)
+ //DIN PB3(Arduino Pin 11)
+ //CLK PB4(Arduino Pin 12)
+
+//******************************************************************************//
+
+ // topleft   = Arduino Pin A0;
+ // topright  = Arduino Pin A1;
+ // downleft  = Arduino Pin A2;
+ // downright = Arduino Pin A3;
+  
+//******************************************************************************//
+
+// dirPin_A    Arduino Pin 2
+// stepPin_A   Arduino Pin 3
+// dirPin_B    Arduino Pin 4
+// stepPin_B   Arduino Pin 5
+
+//******************************************************************************//
+
+#include <Nokia_5110.h>
+
+#define dirPin_A 2
+#define stepPin_A 3
+#define dirPin_B 4
+#define stepPin_B 5
+
+#define RST 8
+#define CE 9
+#define DC 10
+#define DIN 11
+#define CLK 12
+
+int topleft;
+int topright;
+int downleft;
+int downright;
+int waittime = 1;
+
+Nokia_5110 lcd = Nokia_5110(RST, CE, DC, DIN, CLK);
+
+void setup() 
+{
+  DDRB = 0b00011111;
+  pinMode(stepPin_A, OUTPUT);
+  pinMode(dirPin_A, OUTPUT);
+  pinMode(stepPin_B, OUTPUT);
+  pinMode(dirPin_B, OUTPUT);
+  
+  TCCR1A = 0;
+  TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM11);
+  TCCR1B = 0;
+  TCCR1B = (1 << WGM13) | (1 << WGM12) | (1 << CS11);
+  ICR1 = 40000;
+  OCR1A = 3000;
+  OCR1B = 3600;
+
+   lcd.clear();
+   lcd.setCursor(30, 2);
+   lcd.print("Mievo");
+   lcd.setCursor(5, 3);
+   lcd.println(" Technologies");
+   delay(500);
+   lcd.clear();
+}
+
+void loop() 
+{
+ 
+//////////////////////////////////////////////////////////////////////////////////////////
+if((topleft>99) && (topleft<1000))
+{
+      lcd.setCursor(77, 2);
+      lcd.print("    ");
+}
+if((topleft>9) && (topleft<100))
+{
+      lcd.setCursor(72, 2);
+      lcd.print("   ");
+}
+if(topleft<10)
+{
+      lcd.setCursor(66, 2);
+      lcd.print("        ");
+}
+////////////////////////////////////////////////////////////////////////////////////////////
+
+if((topright>99) && (topright<1000))
+{
+      lcd.setCursor(77, 3);
+      lcd.print("    ");
+}
+if((topright>9) && (topright<100))
+{
+      lcd.setCursor(72, 3);
+      lcd.print("    ");
+}
+if(topright<10)
+{
+      lcd.setCursor(66, 3);
+      lcd.print("        ");
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+if((downleft>99) && (downleft<1000))
+{
+      lcd.setCursor(77, 4);
+      lcd.print("    ");
+}
+if((downleft>9) && (downleft<100))
+{
+      lcd.setCursor(72, 4);
+      lcd.print("    ");
+}
+if(downleft<10)
+{
+      lcd.setCursor(66, 4);
+      lcd.print("         ");
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+if((downright>99) && (downright<1000))
+{
+      lcd.setCursor(77, 5);
+      lcd.print("    ");
+}
+if((downright>9) && (downright<100))
+{
+      lcd.setCursor(72, 5);
+      lcd.print("    ");
+}
+if(downright<10)
+{
+      lcd.setCursor(66, 5);
+      lcd.print("        ");
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+
+   lcd.setCursor(5, 0);
+   lcd.print("SOLAR TRACKER");
+   lcd.setCursor(10, 2);
+   lcd.print("TL ");
+   lcd.setCursor(60,2);
+   lcd.println(topleft);
+
+   lcd.setCursor(10, 3);
+   lcd.print("TR ");
+   lcd.setCursor(60, 3);
+   lcd.println(topright);
+
+   lcd.setCursor(10, 4);
+   lcd.print("DL ");
+   lcd.setCursor(60,4);
+   lcd.println(downleft);
+
+   lcd.setCursor(10, 5);
+   lcd.print("DR ");
+   lcd.setCursor(60, 5);
+   lcd.println(downright);
+
+   
+  topleft = analogRead(A0);
+  topright = analogRead(A1);
+  downleft = analogRead(A2);
+  downright = analogRead(A3);
+
+  if (topleft > topright) 
+  {
+    OCR1A = OCR1A + 1;
+    digitalWrite(dirPin_A, LOW);
+    digitalWrite(stepPin_A, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_A, LOW);
+    delayMicroseconds(4000);
+  }
+  if (downleft > downright) 
+  {
+    OCR1A = OCR1A + 1;
+    digitalWrite(dirPin_A, LOW);
+    digitalWrite(stepPin_A, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_A, LOW);
+    delayMicroseconds(4000);
+  }
+  if (topleft < topright) 
+  {
+    OCR1A = OCR1A - 1;
+    digitalWrite(dirPin_A, HIGH);
+    digitalWrite(stepPin_A, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_A, LOW);
+    delayMicroseconds(4000);
+  }
+  if (downleft < downright) 
+  {
+    OCR1A = OCR1A - 1;
+    digitalWrite(dirPin_A, HIGH);
+    digitalWrite(stepPin_A, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_A, LOW);
+    delayMicroseconds(4000);
+  }
+  if (OCR1A > 4000) {
+    OCR1A = 4000;
+  }
+  if (OCR1A < 2000) {
+    OCR1A = 2000;
+  }
+  if (topleft > downleft) 
+  {
+    OCR1B = OCR1B - 1;
+    digitalWrite(dirPin_B, LOW);
+    digitalWrite(stepPin_B, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_B, LOW);
+    delayMicroseconds(4000);
+  }
+  if (topright > downright) 
+  {
+    OCR1B = OCR1B - 1;
+    digitalWrite(dirPin_B, LOW);
+    digitalWrite(stepPin_B, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_B, LOW);
+    delayMicroseconds(4000);
+  }
+  if (topleft < downleft) 
+  {
+    OCR1B = OCR1B + 1;
+    digitalWrite(dirPin_B, HIGH);
+    digitalWrite(stepPin_B, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_B, LOW);
+    delayMicroseconds(4000);
+  }
+  if (topright < downright) 
+  {
+    OCR1B = OCR1B + 1;
+    digitalWrite(dirPin_B, HIGH);
+    digitalWrite(stepPin_B, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_B, LOW);
+    delayMicroseconds(4000);
+  }
+  if (OCR1B > 4200) {
+    OCR1B = 4200;
+  }
+  if (OCR1B < 3000) {
+    OCR1B = 3000;
+  }
+}

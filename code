@@ -1,0 +1,138 @@
+   
+//******************************************************************************//
+
+                  //This code is for Dual AxisSolar Tracker
+                  //Atmega328P (Internal 1MHz Frequency) with AREF 3.3v
+                  //Anshul Verma 
+                  //M.Tech (Microelectronics) 
+                  //IIIT Allahabad 
+                  
+//******************************************************************************
+
+ //Nokia 5110 Pin Layout
+ //RST PB0(Arduino Pin 8)
+ //CE  PB1(Arduino Pin 9)
+ //DC  PB2(Arduino Pin 10)
+ //DIN PB3(Arduino Pin 11)
+ //CLK PB4(Arduino Pin 12)
+
+//******************************************************************************//
+
+ // topleft   = Arduino Pin A0;
+ // topright  = Arduino Pin A1;
+ // downleft  = Arduino Pin A2;
+ // downright = Arduino Pin A3;
+  
+//******************************************************************************//
+
+// dirPin_A    Arduino Pin 2
+// stepPin_A   Arduino Pin 3
+// dirPin_B    Arduino Pin 4
+// stepPin_B   Arduino Pin 5
+
+//******************************************************************************//
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
+
+#define dirPin_A 2
+#define stepPin_A 3
+//#define dirPin_B 4
+//#define stepPin_B 5
+
+
+int topleft;
+int topright;
+int downleft;
+int downright;
+int waittime = 1;
+
+RF24 radio(9, 10); // CE, CSN
+const byte address[6] = "00001";
+
+
+
+void setup() 
+{
+  DDRB = 0b00011111;
+  pinMode(stepPin_A, OUTPUT);
+  pinMode(dirPin_A, OUTPUT);
+  //pinMode(stepPin_B, OUTPUT);
+  //pinMode(dirPin_B, OUTPUT);
+  
+  TCCR1A = 0;
+  TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM11);
+  TCCR1B = 0;
+  TCCR1B = (1 << WGM13) | (1 << WGM12) | (1 << CS11);
+  ICR1 = 40000;
+  OCR1A = 3000;
+  OCR1B = 3600;
+
+  radio.begin();
+  radio.openWritingPipe(address);
+  radio.setPALevel(RF24_PA_MIN);
+  radio.stopListening();
+
+}
+
+void loop() 
+{
+ 
+ 
+  topleft = analogRead(A0);
+  topright = analogRead(A1);
+  downleft = analogRead(A2);
+  downright = analogRead(A3);
+  
+int avgleft=(topleft+downleft)/2;
+int avgright=(topright+downright)/2;
+int avgtop=(topleft+topright)/2;
+int avgdown=(downleft+downright)/2;
+int text[] = {topleft,topright,downleft,downright};
+radio.write(&text, sizeof(text));
+
+  if (avgleft > avgright) 
+  {
+    OCR1A = OCR1A + 1;
+    digitalWrite(dirPin_A, LOW);
+    digitalWrite(stepPin_A, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_A, LOW);
+    delayMicroseconds(4000);
+  }
+  }
+  if (avgtop > avgdown) 
+  {
+    OCR1A = OCR1A + 1;
+    digitalWrite(dirPin_A, LOW);
+    digitalWrite(stepPin_A, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_A, LOW);
+    delayMicroseconds(4000);
+  }
+  if (avgleft < avgright) 
+  {
+    OCR1A = OCR1A - 1;
+    digitalWrite(dirPin_A, HIGH);
+    digitalWrite(stepPin_A, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_A, LOW);
+    delayMicroseconds(4000);
+  }
+  if (avgtop < avgdown) 
+  {
+    OCR1A = OCR1A - 1;
+    digitalWrite(dirPin_A, HIGH);
+    digitalWrite(stepPin_A, HIGH); 
+    delayMicroseconds(4000);
+    digitalWrite(stepPin_A, LOW);
+    delayMicroseconds(4000);
+  }
+  if (OCR1A > 4000) {
+    OCR1A = 4000;
+  }
+  if (OCR1A < 2000) {
+    OCR1A = 2000;
+  }
+  
+}
